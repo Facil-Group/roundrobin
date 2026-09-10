@@ -114,7 +114,14 @@ EOT;
             return $members;
         }
         foreach ($PLUGIN_HOOKS['roundrobin_filter_members'] as $pluginKey => $callable) {
-            if (!Plugin::isPluginActive($pluginKey) || !is_callable($callable)) {
+            if (!Plugin::isPluginActive($pluginKey)) {
+                continue;
+            }
+            // The callback usually lives in the plugin's hook.php, which GLPI only includes on demand
+            // (same as Plugin::doHookFunction()). Without this, CLI/cron ticket creation would skip the filter.
+            Plugin::includeHook($pluginKey);
+            if (!is_callable($callable)) {
+                PluginRoundRobinLogger::addWarning(__METHOD__ . ' - filter from plugin ' . $pluginKey . ' is not callable, ignored');
                 continue;
             }
             try {
